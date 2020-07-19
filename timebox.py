@@ -1,7 +1,7 @@
+# %%
 import rumps
 import time
 import subprocess
-import shlex
 import csv
 import sqlite3
 import os
@@ -20,104 +20,179 @@ def timez():
     return time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.localtime())
 
 
-def get_things_min(index=0, complete_task=False):
-    try:
-        conn = sqlite3.connect(os.path.expanduser('~/Library/Containers/com.culturedcode.ThingsMac/Data/Library/Application Support/Cultured Code/Things/Things.sqlite3'))
-        sql = ("SELECT\n"
-               "            TAG.title,\n"
-               "            TASK.title,\n"
-               "            \"things:///show?id=\" || TASK.uuid\n"
-               "            FROM TMTask as TASK\n"
-               "            LEFT JOIN TMTaskTag TAGS ON TAGS.tasks = TASK.uuid\n"
-               "            LEFT JOIN TMTag TAG ON TAGS.tags = TAG.uuid\n"
-               "            LEFT OUTER JOIN TMTask PROJECT ON TASK.project = PROJECT.uuid\n"
-               "            LEFT OUTER JOIN TMArea AREA ON TASK.area = AREA.uuid\n"
-               "            LEFT OUTER JOIN TMTask HEADING ON TASK.actionGroup = HEADING.uuid\n"
-               "            WHERE TASK.trashed = 0 AND TASK.status = 0 AND TASK.type = 0 AND TAG.title IS NOT NULL\n"
-               "            AND TASK.start = 1\n"
-               "            AND TASK.startdate is NOT NULL\n"
-               "            ORDER BY TASK.todayIndex\n"
-               "            LIMIT 100")
-        tasks = []
-        for row in conn.execute(sql):
-            tasks.append([*row])
-        conn.close()
-        task = tasks[index]
-        if not complete_task:
-            if task[0]:
-                return int(task[0].replace("min", ""))
-        else:
-            if task[2]:
-                # print("open the following url: ", task[2])
-                subprocess.call(shlex.split('open '+task[2]))
-    except:
-        return 60
+# %%
+def get_things_today_tasks(index=0, complete_task=False):
+    conn = sqlite3.connect(
+        os.path.expanduser(
+            "~/Library/Containers/com.culturedcode.ThingsMac/Data/Library/Application Support/Cultured Code/Things/Things.sqlite3"
+        )
+    )
+    sql = (
+        "SELECT\n"
+        "            TAG.title,\n"
+        "            TASK.title,\n"
+        '            "things:///show?id=" || TASK.uuid\n'
+        "            FROM TMTask as TASK\n"
+        "            LEFT JOIN TMTaskTag TAGS ON TAGS.tasks = TASK.uuid\n"
+        "            LEFT JOIN TMTag TAG ON TAGS.tags = TAG.uuid\n"
+        "            LEFT OUTER JOIN TMTask PROJECT ON TASK.project = PROJECT.uuid\n"
+        "            LEFT OUTER JOIN TMArea AREA ON TASK.area = AREA.uuid\n"
+        "            LEFT OUTER JOIN TMTask HEADING ON TASK.actionGroup = HEADING.uuid\n"
+        "            WHERE TASK.trashed = 0 AND TASK.status = 0 AND TASK.type = 0 AND TAG.title IS NOT NULL\n"
+        "            AND TASK.start = 1\n"
+        "            AND TASK.startdate is NOT NULL\n"
+        "            ORDER BY TASK.todayIndex\n"
+        "            LIMIT 100"
+    )
+    tasks = []
+    for row in conn.execute(sql):
+        tasks.append(row)
+    conn.close()
+    return tasks
 
 
+def process_tasks(list_of_tasks):
+    processed_tasks = {}
+
+    for task_tuple in list_of_tasks:
+        if task_tuple[0][-3:] == "min":
+            processed_tasks[task_tuple[1]] = int(task_tuple[0][:-3])
+
+    return processed_tasks
+
+
+def hour_formatter(minutes):
+    if minutes // 60 > 0:
+        return f"{minutes // 60}h, {minutes % 60}m of work today!"
+    else:
+        return f"{minutes}m of work today!"
+
+
+# %%
 class TimerApp(object):
     def __init__(self, timer_interval=1):
         self.timer = rumps.Timer(self.on_tick, 1)
         self.timer.stop()  # timer running when initialized
         self.timer.count = 0
         self.app = rumps.App("Timebox", "🥊")
-        self.start_pause_button = rumps.MenuItem(title='Start Timer',
-                                                 callback=lambda _: self.start_timer(_, self.interval))
-        self.stop_button = rumps.MenuItem(title='Stop Timer',
-                                          callback=None)
+        self.interval = SEC_TO_MIN
+        self.start_pause_button = rumps.MenuItem(
+            title="Start Timer",
+            callback=lambda _: self.start_timer(_, self.interval),
+            key="s",
+        )
+        self.stop_button = rumps.MenuItem(title="Stop Timer", callback=None)
         self.buttons = {}
         self.buttons_callback = {}
         for i in [5, 10, 15, 20, 25]:
-            title = str(i) + ' Minutes'
+            title = str(i) + " Minutes"
             callback = lambda _, j=i: self.set_mins(_, j)
-            self.buttons["btn_" + str(i)] = rumps.MenuItem(title=title, callback=callback)
+            self.buttons["btn_" + str(i)] = rumps.MenuItem(
+                title=title, callback=callback
+            )
             self.buttons_callback[title] = callback
-        self.interval = get_things_min()*SEC_TO_MIN
-        self.button_things = rumps.MenuItem(title="Things Interval ("+str(round(self.interval/SEC_TO_MIN))+"min)", callback=lambda _: self.set_things_mins(_))
-        self.button_things.state = True
+
+        self.sync_button = rumps.MenuItem(
+            title="Sync", callback=lambda _: self.sync_data(), key="r"
+        )
+
+        self.things_tasks = get_things_today_tasks()
+
+        self.things_processed_tasks = process_tasks(self.things_tasks)
+
+        self.sum_of_tasks_scheduled = sum(self.things_processed_tasks.values())
+
+        self.sum_menu_item = rumps.MenuItem(title="hours_spent", callback=None)
+
+        self.things_buttons = {
+            f"({time} min) {title}": rumps.MenuItem(
+                title=f"({time} min) {title}",
+                callback=lambda _, j=time: self.set_mins(_, j),
+            )
+            for title, time in self.things_processed_tasks.items()
+        }
+
+        first = list(self.things_buttons.values())[0]
+        first.callback(first)
+
         self.app.menu = [
             self.start_pause_button,
             None,
-            self.button_things,
+            self.sync_button,
+            None,
+            self.sum_menu_item,
+            *self.things_buttons.values(),
             None,
             *self.buttons.values(),
             None,
-            self.stop_button]
+            self.stop_button,
+        ]
+
+    def sync_data(self):
+        self.things_tasks = get_things_today_tasks()
+
+        self.things_processed_tasks = process_tasks(self.things_tasks)
+
+        self.sum_of_tasks_scheduled = sum(self.things_processed_tasks.values())
+
+        self.app.menu[
+            "hours_spent"
+        ].title = f"{hour_formatter(self.sum_of_tasks_scheduled)}"
+
+        prev_things_buttons = self.things_buttons
+
+        self.things_buttons = {
+            f"({time} min) {title}": rumps.MenuItem(
+                title=f"({time} min) {title}",
+                callback=lambda _, j=time: self.set_mins(_, j),
+            )
+            for title, time in self.things_processed_tasks.items()
+        }
+
+        for title in prev_things_buttons.keys():
+            del self.app.menu[title]
+
+        for title, menu_item in self.things_buttons.items():
+            self.app.menu.insert_after("hours_spent", menu_item)
 
     def run(self):
+        self.app.menu[
+            "hours_spent"
+        ].title = f"{hour_formatter(self.sum_of_tasks_scheduled)}"
         self.app.run()
 
-    def set_things_mins(self, sender):
-        pass_interval = get_things_min()
-        print("pass_interval is now", pass_interval)
-        self.button_things.title = "Things Interval (" + str(round(pass_interval)) + "min)"
-        self.set_mins(sender, pass_interval)
-
     def set_mins(self, sender, interval):
-        for btn in [self.button_things, *self.buttons.values()]:
+        for btn in [*self.things_buttons.values(), *self.buttons.values()]:
             if sender.title == btn.title:
-                self.interval = interval*SEC_TO_MIN
+                self.interval = interval * SEC_TO_MIN
+                cleaned_title = " ".join(sender.title.split()[2:])
+                self.menu_title = (
+                    " ".join(cleaned_title.split()[:4])
+                    if len(cleaned_title.split()) > 4
+                    else cleaned_title
+                )
                 btn.state = True
             elif sender.title != btn.title:
                 btn.state = False
 
     def start_timer(self, sender, interval):
-        for btn in [self.button_things, *self.buttons.values()]:
+        for btn in [*self.things_buttons.values(), *self.buttons.values()]:
             btn.set_callback(None)
 
         if sender.title.lower().startswith(("start", "continue")):
 
-            if sender.title == 'Start Timer':
+            if sender.title == "Start Timer":
                 # reset timer & set stop time
                 self.timer.count = 0
                 self.timer.end = interval
 
             # change title of MenuItem from 'Start timer' to 'Pause timer'
-            sender.title = 'Pause Timer'
+            sender.title = "Pause Timer"
 
             # lift off! start the timer
             self.timer.start()
         else:  # 'Pause Timer'
-            sender.title = 'Continue Timer'
+            sender.title = "Continue Timer"
             self.timer.stop()
 
     def on_tick(self, sender):
@@ -125,14 +200,16 @@ class TimerApp(object):
         mins = time_left // 60 if time_left >= 0 else time_left // 60 + 1
         secs = time_left % 60 if time_left >= 0 else (-1 * time_left) % 60
         if mins == 0 and time_left < 0:
-            rumps.notification(title='Timebox',
-                               subtitle='Time is up! Take a break :)',
-                               message='')
+            rumps.notification(
+                title="Timebox", subtitle="Time is up! Take a break :)", message=""
+            )
             self.stop_timer(sender)
             self.stop_button.set_callback(None)
         else:
             self.stop_button.set_callback(self.stop_timer)
-            self.app.title = '{:2d}:{:02d}'.format(mins, secs)
+            self.app.title = "{} {:2d}:{:02d}".format(
+                getattr(self, "menu_title", ""), mins, secs
+            )
         sender.count += 1
 
     def stop_timer(self, sender=None):
@@ -143,16 +220,16 @@ class TimerApp(object):
 
         for key, btn in self.buttons.items():
             btn.set_callback(self.buttons_callback[btn.title])
-        self.button_things.set_callback(lambda _: self.set_things_mins(_))
 
-        if self.button_things.state:
-            self.interval = get_things_min(1)*SEC_TO_MIN
-            self.button_things.title = "Things Interval ("+str(round(self.interval/SEC_TO_MIN))+"min)"
-            get_things_min(0, True)
+        for (title, btn) in self.things_buttons.items():
+            btn.set_callback(
+                lambda _: self.set_mins(_, self.things_processed_tasks[title])
+            )
 
-        self.start_pause_button.title = 'Start Timer'
+        self.start_pause_button.title = "Start Timer"
 
 
-if __name__ == '__main__':
+# %%
+if __name__ == "__main__":
     app = TimerApp(timer_interval=1)
     app.run()
