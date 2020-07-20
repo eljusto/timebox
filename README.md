@@ -2,4 +2,4 @@
 
 # Timebox – Custom Pomodoro macOS Menubar App
 
-Current release: [Timebox (Version 0.2)](https://github.com/visini/timebox/releases/tag/0.2)
+Current release: [Timebox (Version 1.0)](https://github.com/mk1123/timebox/releases/tag/v1.0)
