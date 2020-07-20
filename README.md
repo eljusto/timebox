@@ -8,11 +8,11 @@ The missing Pomodoro timer for Things 3!
 
 ## Screenshots
 
-![things3](Screenshots/Screenshot 2020-07-19 17.17.04.png)
+![things3](Screenshots/Screenshot%202020-07-19%2017.17.04.png)
 
-![menu](Screenshots/Screenshot 2020-07-19 17.09.38.png)
+![menu](Screenshots/Screenshot%202020-07-19%2017.09.38.png)
 
-![in_use](Screenshots/Screenshot 2020-07-19 17.10.23.png)
+![in_use](Screenshots/Screenshot%202020-07-19%2017.10.23.png)
 
 ---
 
