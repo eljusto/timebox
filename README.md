@@ -16,7 +16,7 @@ The missing Pomodoro timer for Things 3!
 
 ---
 
-Note - for Timebox to work, your tasks in things need to have tags of the form `XXmin`, where XX is the number of minutes you want to spend working on that task.
+Note - for Timebox to work, your tasks in Things 3 need to have tags of the form `XXmin`, where XX is the number of minutes you want to spend working on that task.
 
 Enjoy!
 
