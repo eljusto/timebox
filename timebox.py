@@ -45,8 +45,11 @@ def get_things_today_tasks(index=0, complete_task=False):
         "            LIMIT 100"
     )
     tasks = []
-    for row in conn.execute(sql):
-        tasks.append(row)
+    try:
+        for row in conn.execute(sql):
+            tasks.append(row)
+    except:
+        pass
     conn.close()
     return tasks
 
