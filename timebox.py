@@ -66,7 +66,10 @@ def process_tasks(list_of_tasks):
 
 def hour_formatter(minutes):
     if minutes // 60 > 0:
-        return f"{minutes // 60}h, {minutes % 60}m of work today!"
+        if spare_min := minutes % 60:
+            return f"{minutes // 60}h, {spare_min}m of work today!"
+        else:
+            return f"{minutes // 60}h of work today!"
     else:
         return f"{minutes}m of work today!"
 
@@ -108,16 +111,13 @@ class TimerApp(object):
         self.sum_menu_item = rumps.MenuItem(title="hours_spent", callback=None)
 
         self.things_buttons = {
-            f"({time} min) {title}": rumps.MenuItem(
+            f"{title}": rumps.MenuItem(
                 title=f"({time} min) {title}",
                 callback=lambda _, j=time: self.set_mins(_, j),
             )
             for title, time in self.things_processed_tasks.items()
         }
-
-        first = list(self.things_buttons.values())[0]
-        first.callback(first)
-
+        
         self.app.menu = [
             self.start_pause_button,
             None,
