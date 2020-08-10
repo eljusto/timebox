@@ -2,7 +2,7 @@
 
 # Timebox – Custom Pomodoro macOS Menubar App
 
-Current release: [Timebox (Version 1.1)](https://github.com/mk1123/timebox/releases/tag/v1.1)
+Current release: [Timebox (Version 1.2)](https://github.com/mk1123/timebox/releases/tag/v1.2)
 
 The missing Pomodoro timer for Things 3!
 
