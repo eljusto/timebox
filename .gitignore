@@ -7,3 +7,6 @@ venv
 .node_repl_history
 build
 dist
+.vscode/
+.mypy_cache/
+Timebox-Installer.dmg
