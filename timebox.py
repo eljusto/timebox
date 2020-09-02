@@ -141,8 +141,11 @@ class TimerApp(object):
         self.app.menu[
             "hours_spent"
         ].title = f"{hour_formatter(self.sum_of_tasks_scheduled)}"
-
+        
         prev_things_buttons = self.things_buttons
+        
+        for title in prev_things_buttons.keys():
+            del self.app.menu[prev_things_buttons[title].title]
 
         self.things_buttons = {
             f"({time} min) {title}": rumps.MenuItem(
@@ -151,9 +154,6 @@ class TimerApp(object):
             )
             for title, time in self.things_processed_tasks.items()
         }
-
-        for title in prev_things_buttons.keys():
-            del self.app.menu[title]
 
         for title, menu_item in self.things_buttons.items():
             self.app.menu.insert_after("hours_spent", menu_item)
