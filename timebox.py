@@ -24,7 +24,7 @@ def timez():
 def get_things_today_tasks(index=0, complete_task=False):
     conn = sqlite3.connect(
         os.path.expanduser(
-            "~/Library/Containers/com.culturedcode.ThingsMac/Data/Library/Application Support/Cultured Code/Things/Things.sqlite3"
+            "~/Library/Group Containers/JLMPQHK86H.com.culturedcode.ThingsMac/Things.sqlite3"
         )
     )
     sql = (
