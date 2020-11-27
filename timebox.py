@@ -24,7 +24,7 @@ def timez():
 def get_things_today_tasks(index=0, complete_task=False):
     conn = sqlite3.connect(
         os.path.expanduser(
-            "~/Library/Group Containers/JLMPQHK86H.com.culturedcode.ThingsMac/Things.sqlite3"
+            "~/Library/Group Containers/JLMPQHK86H.com.culturedcode.ThingsMac/Things Database.thingsdatabase/main.sqlite"
         )
     )
     sql = (
@@ -48,8 +48,8 @@ def get_things_today_tasks(index=0, complete_task=False):
     try:
         for row in conn.execute(sql):
             tasks.append(row)
-    except:
-        pass
+    except Exception as e:
+        print(e)
     conn.close()
     return tasks
 
