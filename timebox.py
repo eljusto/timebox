@@ -87,7 +87,7 @@ class TimerApp(object):
             callback=lambda _: self.start_timer(_, self.interval),
             key="s",
         )
-        self.stop_button = rumps.MenuItem(title="Stop Timer", callback=None)
+        self.stop_button = rumps.MenuItem(title="Stop Timer", callback=None, key="x")
         self.buttons = {}
         self.buttons_callback = {}
         for i in [5, 10, 15, 20, 25]:
