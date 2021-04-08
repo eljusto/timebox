@@ -113,22 +113,12 @@ class TimerApp(object):
         self.sum_of_tasks_scheduled = sum(self.things_processed_tasks.values())
 
         self.sum_menu_item = rumps.MenuItem(title="hours_spent", callback=None)
-        
-        def callback(time):
-            def inner_callback(_, j=time):
-                self.set_mins(_, j)
-                for btn in [*self.things_buttons.values(), *self.buttons.values()]:
-                    btn.set_callback(None)
-                self.timer.count = 0
-                self.timer.end = self.interval
-                self.start_pause_button.title = "Pause Timer"
-                self.timer.start()
-            return inner_callback
+    
 
         self.things_buttons = {
             f"{title}": rumps.MenuItem(
                 title=f"({time} min) {title}",
-                callback=callback(time),
+                callback=self.callback(time),
                 key=str(idx % 10) if idx < 10 else ""
             )
             for idx, (title, time) in enumerate(self.things_processed_tasks.items())
@@ -146,6 +136,17 @@ class TimerApp(object):
             None,
             self.stop_button,
         ]
+        
+    def callback(self, time):
+        def inner_callback(_, j=time):
+            self.set_mins(_, j)
+            for btn in [*self.things_buttons.values(), *self.buttons.values()]:
+                btn.set_callback(None)
+            self.timer.count = 0
+            self.timer.end = self.interval
+            self.start_pause_button.title = "Pause Timer"
+            self.timer.start()
+        return inner_callback
 
     def sync_data(self):
         self.things_tasks = get_things_today_tasks()
@@ -163,22 +164,11 @@ class TimerApp(object):
         for title in prev_things_buttons.keys():
             del self.app.menu[prev_things_buttons[title].title]
 
-        def callback(time):
-            def inner_callback(_, j=time):
-                self.set_mins(_, j)
-                for btn in [*self.things_buttons.values(), *self.buttons.values()]:
-                    btn.set_callback(None)
-                self.timer.count = 0
-                self.timer.end = self.interval
-                self.start_pause_button.title = "Pause Timer"
-                self.timer.start()
-            return inner_callback
-
         self.things_buttons = {}
         for idx, (title, time) in reversed(list(enumerate(self.things_processed_tasks.items()))):
             menu_item = rumps.MenuItem(
                 title=f"({time} min) {title}",
-                callback=callback(time),
+                callback=self.callback(time),
                 key=str(idx % 10) if idx < 10 else ""
             )
             self.things_buttons[title] = menu_item
@@ -252,7 +242,7 @@ class TimerApp(object):
 
         for (title, btn) in self.things_buttons.items():
             btn.set_callback(
-                lambda _: self.set_mins(_, self.things_processed_tasks[title])
+                self.callback(self.things_processed_tasks[title])
             )
 
         self.start_pause_button.title = "Start Timer"
