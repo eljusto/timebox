@@ -174,17 +174,15 @@ class TimerApp(object):
                 self.timer.start()
             return inner_callback
 
-        self.things_buttons = {
-            f"{title}": rumps.MenuItem(
+        self.things_buttons = {}
+        for idx, (title, time) in reversed(list(enumerate(self.things_processed_tasks.items()))):
+            menu_item = rumps.MenuItem(
                 title=f"({time} min) {title}",
                 callback=callback(time),
                 key=str(idx % 10) if idx < 10 else ""
             )
-            for idx, (title, time) in enumerate(self.things_processed_tasks.items())
-        }
-
-        for title, menu_item in self.things_buttons.items():
-            self.app.menu.insert_after("hours_spent", menu_item)
+            self.things_buttons[title] = menu_item
+            self.app.menu.insert_after("hours_spent", menu_item) 
 
     def run(self):
         self.app.menu[
