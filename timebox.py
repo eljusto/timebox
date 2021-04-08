@@ -175,10 +175,12 @@ class TimerApp(object):
             return inner_callback
 
         self.things_buttons = {
-            f"({time} min) {title}": rumps.MenuItem(
+            f"{title}": rumps.MenuItem(
                 title=f"({time} min) {title}",
-                callback=callback(time))
-            for title, time in self.things_processed_tasks.items()
+                callback=callback(time),
+                key=str(idx % 10) if idx < 10 else ""
+            )
+            for idx, (title, time) in enumerate(self.things_processed_tasks.items())
         }
 
         for title, menu_item in self.things_buttons.items():
