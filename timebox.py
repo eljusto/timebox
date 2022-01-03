@@ -94,8 +94,11 @@ class TimerApp(object):
             title = str(i) + " Minutes"
             def callback(_, j=i):
                 self.set_mins(_, j)
+                for btn in [*self.things_buttons.values(), *self.buttons.values()]:
+                    btn.set_callback(None)
                 self.timer.count = 0
-                self.timer.end = j 
+                self.timer.end = self.interval
+                self.start_pause_button.title = "Pause Timer"
                 self.timer.start()
             self.buttons["btn_" + str(i)] = rumps.MenuItem(
                 title=title, callback=callback
@@ -184,6 +187,7 @@ class TimerApp(object):
         for btn in [*self.things_buttons.values(), *self.buttons.values()]:
             if sender.title == btn.title:
                 self.interval = interval * SEC_TO_MIN
+                print(f"here: {self.interval}")
                 cleaned_title = " ".join(sender.title.split()[2:])
                 self.menu_title = (
                     " ".join(cleaned_title.split()[:4])
