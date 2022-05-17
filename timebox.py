@@ -5,6 +5,7 @@ import subprocess
 import csv
 import sqlite3
 import os
+from pathlib import Path
 
 try:
     from urllib import urlretrieve
@@ -59,7 +60,9 @@ def process_tasks(list_of_tasks):
 
     for task_tuple in list_of_tasks:
         if task_tuple[0][-3:] == "min":
-            processed_tasks[task_tuple[1]] = int(task_tuple[0][:-3])
+            processed_tasks[task_tuple[1]] = (task_tuple[2], int(task_tuple[0][:-3]))
+        else:
+            processed_tasks[task_tuple[1]] = (task_tuple[2], 25)
 
     return processed_tasks
 
@@ -80,7 +83,7 @@ class TimerApp(object):
         self.timer = rumps.Timer(self.on_tick, 1)
         self.timer.stop()  # timer running when initialized
         self.timer.count = 0
-        self.app = rumps.App("Timebox", "🥊")
+        self.app = rumps.App("Timebox", "⏱")
         self.interval = SEC_TO_MIN
         self.start_pause_button = rumps.MenuItem(
             title="Start Timer",
@@ -113,18 +116,18 @@ class TimerApp(object):
 
         self.things_processed_tasks = process_tasks(self.things_tasks)
 
-        self.sum_of_tasks_scheduled = sum(self.things_processed_tasks.values())
+        self.sum_of_tasks_scheduled = sum(list(map(lambda x: x[1], self.things_processed_tasks.values())))
 
         self.sum_menu_item = rumps.MenuItem(title="hours_spent", callback=None)
     
 
         self.things_buttons = {
             f"{title}": rumps.MenuItem(
-                title=f"({time} min) {title}",
+                title=f"({time} min) {link}{title}",
                 callback=self.callback(time),
                 key=str((idx + 1) % 10) if idx < 10 else ""
             )
-            for idx, (title, time) in enumerate(self.things_processed_tasks.items())
+            for idx, (title, (link, time)) in enumerate(self.things_processed_tasks.items())
         }
         
         self.app.menu = [
@@ -156,7 +159,7 @@ class TimerApp(object):
 
         self.things_processed_tasks = process_tasks(self.things_tasks)
 
-        self.sum_of_tasks_scheduled = sum(self.things_processed_tasks.values())
+        self.sum_of_tasks_scheduled = sum(list(map(lambda x: x[1], self.things_processed_tasks.values())))
 
         self.app.menu[
             "hours_spent"
@@ -168,9 +171,9 @@ class TimerApp(object):
             del self.app.menu[prev_things_buttons[title].title]
 
         self.things_buttons = {}
-        for idx, (title, time) in reversed(list(enumerate(self.things_processed_tasks.items()))):
+        for idx, (title, (link, time)) in reversed(list(enumerate(self.things_processed_tasks.items()))):
             menu_item = rumps.MenuItem(
-                title=f"({time} min) {title}",
+                title=f"({time} min) {link}{title}",
                 callback=self.callback(time),
                 key=str((idx + 1) % 10) if idx < 10 else ""
             )
@@ -208,7 +211,8 @@ class TimerApp(object):
                 # reset timer & set stop time
                 self.timer.count = 0
                 self.timer.end = interval
-
+    
+            setattr(self, "_taskname", getattr(self, "menu_title", ""))
             # change title of MenuItem from 'Start timer' to 'Pause timer'
             sender.title = "Pause Timer"
 
@@ -230,15 +234,16 @@ class TimerApp(object):
             self.stop_button.set_callback(None)
         else:
             self.stop_button.set_callback(self.stop_timer)
-            self.app.title = "{} {:2d}:{:02d}".format(
-                getattr(self, "menu_title", ""), mins, secs
+            self.app.title = "⏱ {:2d}:{:02d}".format(
+                    mins, secs
             )
         sender.count += 1
 
     def stop_timer(self, sender=None):
         self.timer.stop()
+        prev_count = self.timer.count
         self.timer.count = 0
-        self.app.title = "🥊"
+        self.app.title = "⏱"
         self.stop_button.set_callback(None)
 
         for key, btn in self.buttons.items():
@@ -250,7 +255,9 @@ class TimerApp(object):
             )
 
         self.start_pause_button.title = "Start Timer"
-
+        downloads_path = str(Path.home() / "Downloads" / 'log.txt')
+        with open(downloads_path, 'a+', encoding="utf-8") as f:
+            f.write('{},{}\n'.format(getattr(self,"_taskname", "Without task"), prev_count - 1))
 
 # %%
 if __name__ == "__main__":
