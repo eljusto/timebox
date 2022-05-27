@@ -15,6 +15,7 @@ rumps.debug_mode(True)
 SEC_TO_MIN = 60
 DEFAULT_MINUTES = 25
 LOG_FILE = str(Path.home() / "Downloads" / 'log.csv')
+APP_ICON = 'icons/t3.png'
 
 # %%
 def timestamp():
@@ -39,8 +40,8 @@ class TimerApp(object):
         self.timer.stop()  # timer running when initialized
         self.timer.count = 0
 
-        self.app = rumps.App("Timebox", "⏱")
-
+        self.app = rumps.App("Timebox", icon = APP_ICON, template=True)
+    
         self.current_task = Task()
 
         self.control_buttons = {}
@@ -54,6 +55,11 @@ class TimerApp(object):
         self.control_buttons['sync'] = rumps.MenuItem(
             title="Sync", callback=lambda _: self.sync_data(), key="r"
         )
+        self.control_buttons['open_things'] = rumps.MenuItem(
+            title="Things Today",
+            callback = self.open_things, 
+            key="t"
+        )
 
         self.buttons = {}
         self.buttons_callback = {}
@@ -66,10 +72,13 @@ class TimerApp(object):
             )
             self.buttons_callback[task.title] = callback
 
+
         self.things_buttons = {}
 
         self.sum_menu_item = rumps.MenuItem(title="hours_spent", callback=None)
         self.app.menu = [
+            self.control_buttons['open_things'],
+            None,
             self.control_buttons['start_pause'],
             None,
             self.control_buttons['sync'],
@@ -88,6 +97,11 @@ class TimerApp(object):
             self.set_current_task(_, task)
             self.restart_timer((task.minutes or DEFAULT_MINUTES) * SEC_TO_MIN)
         return inner_callback
+
+    def open_things(self, sender):
+        subprocess.call(
+            shlex.split("open things:///show?id=today")
+        )
 
     def sync_data(self):
         self.things_processed_tasks = tasks.get_things_today_tasks()
@@ -180,9 +194,15 @@ class TimerApp(object):
             self.on_last_tick(sender)
         else:
             self.control_buttons['stop'].set_callback(self.stop_timer)
-            self.app.title = "⏱ {:2d}:{:02d}".format(
+            self.app.title = "{:2d}:{:02d}".format(
                     mins, secs
             )
+            # 0 = 360
+            # 50% = (360 * 50 / 100)
+            # end = 0
+            angle = 360 * (sender.count / sender.end)
+            rounded_angle = int((angle // 15) * 15)
+            self.app.icon = './icons/icon' + '{:03}'.format(rounded_angle) + '.pdf'
         sender.count += 1
 
     def on_last_tick(self, sender):
@@ -213,7 +233,8 @@ class TimerApp(object):
         self.timer.stop()
         prev_count = self.timer.count - 1
         self.timer.count = 0
-        self.app.title = "⏱"
+        self.app.title = ""
+        self.app.icon = APP_ICON
         self.control_buttons['stop'].set_callback(None)
 
         self.control_buttons['start_pause'].title = "Start Timer"

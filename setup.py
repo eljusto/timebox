@@ -3,7 +3,7 @@
 from setuptools import setup
 
 APP = ["timebox.py"]
-DATA_FILES = []
+DATA_FILES = ['icons']
 OPTIONS = {
     "argv_emulation": True,
     "iconfile": "icon.icns",

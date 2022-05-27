@@ -10,3 +10,4 @@ dist
 .vscode/
 .mypy_cache/
 Timebox-Installer.dmg
+*.swp
