@@ -15,7 +15,7 @@ rumps.debug_mode(True)
 SEC_TO_MIN = 60
 DEFAULT_MINUTES = 25
 LOG_FILE = str(Path.home() / "Downloads" / 'log.csv')
-APP_ICON = 'icons/t3.png'
+APP_ICON = 'icons/t3_0530_7.png'
 
 # %%
 def timestamp():
@@ -31,13 +31,14 @@ def hour_formatter(minutes):
         return f"{minutes}m of work today!"
 
 def task_to_csv(task, interval):
-    return '{},{},{},{}\n'.format(timestamp(), task.url, task.title, interval)
+    return '{};"{}";"{}";{}\n'.format(timestamp(), task.url, task.title, interval)
 
 # %%
 class TimerApp(object):
     def __init__(self, timer_interval=1):
         self.timer = rumps.Timer(self.on_tick, 1)
         self.timer.stop()  # timer running when initialized
+        
         self.timer.count = 0
 
         self.app = rumps.App("Timebox", icon = APP_ICON, template=True)
@@ -63,8 +64,9 @@ class TimerApp(object):
 
         self.buttons = {}
         self.buttons_callback = {}
-        for i in [1, 5, 10, 15, 20, 25]:
-            task = Task(i, str(i) + " minutes", '')
+        for i in [1, 5, 10, 15, 20, 25, 30, 35]:
+            task_title_postfix = " minute" if i == 1 else " minutes"
+            task = Task(i, str(i) + task_title_postfix, '')
 
             callback = self.create_task_callback(task)
             self.buttons["btn_" + str(i)] = rumps.MenuItem(
@@ -170,7 +172,7 @@ class TimerApp(object):
             # change title of MenuItem from 'Start timer' to 'Pause timer'
             sender.title = "Pause Timer"
 
-            self.timer.stop()
+            self.timer.start()
             # lift off! start the timer
         else:  # 'Pause Timer'
             sender.title = "Continue Timer"
@@ -201,7 +203,7 @@ class TimerApp(object):
             # 50% = (360 * 50 / 100)
             # end = 0
             angle = 360 * (sender.count / sender.end)
-            rounded_angle = int((angle // 15) * 15)
+            rounded_angle = 360 - int((angle // 10) * 10)
             self.app.icon = './icons/icon' + '{:03}'.format(rounded_angle) + '.pdf'
         sender.count += 1
 
