@@ -10,10 +10,15 @@ import time
 import tasks
 from tasks import Task
 
+from Foundation import (NSLog)
+
 rumps.debug_mode(True)
+
+global _log
 
 SEC_TO_MIN = 60
 DEFAULT_MINUTES = 25
+DEBUG_FILE = str(Path.home() / "Downloads" / 'debug.log')
 LOG_FILE = str(Path.home() / "Downloads" / 'log.csv')
 APP_ICON = 'icons/t3_0530_7.png'
 
@@ -231,7 +236,11 @@ class TimerApp(object):
 
     def stop_timer(self, sender):
         self.enable_task_items()
-
+        
+        #     :param action_button: title for the action button.
+        #    :param other_button: title for the other button.
+        #    :param has_reply_button: whether or not the notification has a reply button.
+        
         self.timer.stop()
         prev_count = self.timer.count - 1
         self.timer.count = 0
@@ -242,10 +251,32 @@ class TimerApp(object):
         self.control_buttons['start_pause'].title = "Start Timer"
         
         self.sync_data()
-
+        
+        data = {
+            'time': self.current_task.title,
+        }
+        
         with open(LOG_FILE, 'a+', encoding="utf-8") as f:
             f.write(task_to_csv(self.current_task, prev_count))
+        
+        rumps.notification(
+                title="Timebox",
+                subtitle="Time is up! Take a break :)",
+                action_button="Start break pomo",
+                message=self.current_task.title,
+                data=data,
+        )
 
+
+@rumps.notifications
+def notification_center(info):
+    __log(info.items())
+
+def __log(*args):
+    log_str = ' '.join(map(str, args))
+    with open(DEBUG_FILE, 'a+', encoding="utf-8") as f:
+        f.write(log_str)
+    NSLog(log_str)
 # %%
 if __name__ == "__main__":
     app = TimerApp(timer_interval=1)

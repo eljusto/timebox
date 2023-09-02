@@ -1,11 +1,14 @@
 env: 
-	env PYTHON_CONFIGURE_OPTS="--enable-framework" pyenv install -v 3.9.12
+	env PYTHON_CONFIGURE_OPTS="--enable-framework" pyenv install -v 3.11.5
 	
 deps:
-	pip install -r requirements.txt
+	pyenv exec pip install -r requirements.txt
+
+run:
+	./dist/Timebox.app/Contents/MacOS/Timebox
 
 compile:
-	python3 setup.py py2app
+	pyenv exec python ./setup.py py2app
 
 dmg:
 	brew install create-dmg
